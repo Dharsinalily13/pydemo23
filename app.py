@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import os
 from werkzeug.utils import secure_filename
@@ -7,25 +8,11 @@ app.secret_key = 'demo_secret_key'  # Change in production
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB limit
 
-# Dummy data: User profiles (key: email, value: dict of fields)
-users = {
-    'admin@example.com': {
-        'name': 'Admin User',
-        'age': 30,
-        'phone': '123-456-7890',
-        'blood_group': 'O+',
-        'address': '123 Main St',
-        'password': 'password'  # Plain text for demo; hash in production
-    }
-}
-alerts = []  # Dummy alerts list
-resources = [
-    {'id': 1, 'title': 'Emergency Kit Guide', 'category': 'Disaster', 'description': 'How to prepare an emergency kit.'},
-    {'id': 2, 'title': 'Volunteer Training', 'category': 'Training', 'description': 'Online training for volunteers.'}
-]
-blog_posts = [
-    {'id': 1, 'title': 'Helping in Disasters', 'content': 'Placeholder blog content...', 'comments': []}
-]
+# Dummy data
+users = {'admin@example.com': {'name': 'Admin', 'age': 30, 'phone': '1234567890', 'blood_group': 'O+', 'address': '123 St', 'password': 'password'}}
+alerts = []
+resources = [{'id': 1, 'title': 'Kit Guide', 'category': 'Disaster', 'description': 'Prepare kit.'}]
+blog_posts = [{'id': 1, 'title': 'Disaster Help', 'content': 'Content...', 'comments': []}]
 
 @app.route('/')
 def home():
@@ -41,7 +28,7 @@ def sos():
         location = request.form.get('location')
         message = request.form.get('message')
         alerts.append({'location': location, 'message': message, 'user': session.get('user')})
-        flash('SOS alert sent!')
+        flash('SOS sent!')
         return redirect(url_for('home'))
     return render_template('sos.html')
 
@@ -53,7 +40,7 @@ def login():
         if email in users and users[email]['password'] == password:
             session['user'] = email
             return redirect(url_for('dashboard'))
-        flash('Invalid email or password')
+        flash('Invalid credentials')
     return render_template('login.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -61,7 +48,7 @@ def signup():
     if request.method == 'POST':
         email = request.form['email']
         if email in users:
-            flash('Email already registered')
+            flash('Email taken')
             return redirect(url_for('signup'))
         users[email] = {
             'name': request.form['name'],
@@ -69,10 +56,10 @@ def signup():
             'phone': request.form['phone'],
             'blood_group': request.form['blood_group'],
             'address': request.form['address'],
-            'password': request.form['password']  # Hash in production
+            'password': request.form['password']
         }
         session['user'] = email
-        flash('Signup successful! Welcome.')
+        flash('Signup success!')
         return redirect(url_for('dashboard'))
     return render_template('signup.html')
 
@@ -80,9 +67,9 @@ def signup():
 def dashboard():
     if 'user' not in session:
         return redirect(url_for('login'))
-    user_profile = users.get(session['user'], {})
+    profile = users.get(session['user'], {})
     user_alerts = [a for a in alerts if a.get('user') == session['user']]
-    return render_template('dashboard.html', profile=user_profile, alerts=user_alerts)
+    return render_template('dashboard.html', profile=profile, alerts=user_alerts)
 
 @app.route('/logout')
 def logout():
@@ -96,9 +83,9 @@ def resources_page():
         if file:
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            flash('File uploaded!')
-    category_filter = request.args.get('category', '')
-    filtered = [r for r in resources if category_filter in r['category']] if category_filter else resources
+            flash('Uploaded!')
+    category = request.args.get('category', '')
+    filtered = [r for r in resources if category in r['category']] if category else resources
     return render_template('resources.html', resources=filtered)
 
 @app.route('/blog')
